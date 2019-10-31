@@ -1,0 +1,10 @@
+__pycache__/
+**/training/utilities/
+**/inference/utilities/
+build/
+
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+
+.cache/
