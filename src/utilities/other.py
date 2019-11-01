@@ -3,6 +3,7 @@ import joblib
 import boto3
 import os
 import re
+import json
 from tempfile import TemporaryDirectory
 
 
@@ -12,35 +13,31 @@ def split_s3_uri(uri):
     return bucket, key
 
 
-def download_directory(uri, dst, dst_exist_ok=True):
-    """Downloads a directory from S3 onto the local disk."""
-    os.makedirs(dst, exist_ok=dst_exist_ok)
-
-    bucket, key = split_s3_uri(uri)
-    s3 = boto3.resource('s3')
-    bucket_obj = s3.Bucket(bucket)
-    for obj in bucket_obj.objects.filter(Prefix=key):
-        if obj.key.endswith('/'):
-            continue  # Skip over fileless items returned.
-        else:
-            _, fname = os.path.split(obj.key)
-            bucket_obj.download_file(obj.key, os.path.join(dst, fname))
-    return 
-
-
-def read_csv_directory(path):
-    """Loads in a CSV directory into a single dataframe."""
-    fpaths = [os.path.join(path, f) for f in os.listdir(path)]
-    dfs = [pd.read_csv(f, sep=';') for f in fpaths]
-    df = pd.concat(dfs, ignore_index=True)
-    return df
-
-
-def save_model(obj, uri):
-    """Serialises and uploads the model artifacts into S3."""
+def load_model(uri):
     bucket, key = split_s3_uri(uri)
     s3 = boto3.client('s3')
     with TemporaryDirectory() as tmpdir:
         tmpfile = os.path.join(tmpdir, 'model.joblib')
-        joblib.dump(obj, tmpfile)
-        s3.upload_file(tmpfile, bucket, f"{key}model.joblib")
+        s3.download_file(bucket, key, tmpfile)
+        model = joblib.load(tmpfile)
+    return model
+
+
+def load_dataframe_from_sqs_event(event_dict):
+    dfs = []
+    for record in event_dict['records']:
+        msg = json.loads(record['body'])
+        s3_data_uri = msg['uri']
+        dff = pd.read_csv(s3_data_uri)
+        dfs.append(dff)
+    df = pd.concat(dfs, ignore_index=True)
+    return df
+
+
+def push_results_to_sqs(queue, results):
+    body = results.to_json(orient='records', lines=True)
+    sqs = boto3.client('sqs')
+    return sqs.send_message(
+        QueueUrl=queue,
+        MessageBody=body,
+    )

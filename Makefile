@@ -7,14 +7,6 @@ HOME=$(pwd)
 build-utilities:
 	cp src/utilities src/training/ -r
 	cp src/utilities src/inference/ -r
-build-training: build-utilities
-	rm ./build/training -rf && \
-	mkdir -p ./build && \
-	cp -r ./src/training ./build/training && \
-	pip install -r ./build/training/requirements.txt -t ./build/training && \
-	rm ./build/training/*.dist-info ./build/training/__pycache__/ -rf && \
-	cd ./build/training && \
-	zip -r ../training.zip .
 build-inference: build-utilities
 	rm ./build/inference -rf && \
 	mkdir -p ./build && \
@@ -23,7 +15,7 @@ build-inference: build-utilities
 	rm ./build/inference/*.dist-info ./build/inference/__pycache__/ -rf && \
 	cd ./build/inference && \
 	zip -r ../inference.zip .
-build: build-utilities build-training build-inference
+build: build-utilities build-inference
 
 #########################
 ## Deployment Commands ##
