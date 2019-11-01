@@ -1,16 +1,4 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split as sk_train_test_split
-from sklearn.preprocessing import OneHotEncoder
-
-def Xy_split(df, target):
-    X = df.copy()
-    y = X.pop(target)
-    return X, y
-
-
-def train_test_split(df):
-    train, test = sk_train_test_split(df, test_size=0.33)
-    return train, test
 
 
 def preprocess(X):
