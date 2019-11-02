@@ -16,9 +16,11 @@ def predict(event, context):
 
     model = utilities.load_model(MODEL_URI)
     y = model.predict(X)
-
     results = utilities.postprocess(X, y)
-    utilities.push_results_to_sqs(queue=WRITER_QUEUE, results=results)
+
+    msg = utilities.SQSMessage()
+    msg.dataframe = results
+    msg.send(queue=WRITER_QUEUE)
     return {
         "status": "success",
     } 
